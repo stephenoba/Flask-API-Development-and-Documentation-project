@@ -9,6 +9,21 @@ from models import setup_db, Question, Category
 QUESTIONS_PER_PAGE = 10
 
 
+def paginate(request, selection):
+    len_total_items = len(selection)
+    total_pages = round(len_total_items / 10)
+    page = request.args.get("page", 1, type=int)
+    next_page = page + 1 if page < total_pages else None
+    previous_page = page - 1 if page > 1 else None
+    start = (page - 1) * QUESTIONS_PER_PAGE
+    end = start + QUESTIONS_PER_PAGE
+
+    items = [item.format() for item in selection]
+    current_items = items[start:end]
+
+    return current_items, total_pages, page, next_page,  previous_page
+
+
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
@@ -32,12 +47,30 @@ def create_app(test_config=None):
             "Access-Control-Allow-Methods",
             "GET,PUT,POST,DELETE,OPTIONS"
         )
+        return response
 
     """
     @TODO:
     Create an endpoint to handle GET requests
     for all available categories.
     """
+    def serialize_categories(query):
+        categories = query.order_by(Category.id).all()
+        serialized_data = {
+            "categories": {}
+        }
+
+        if categories:
+            for category in categories:
+                serialized_data["categories"].update({str(category.id): category.type})
+        return serialized_data
+
+    @app.route('/categories', methods=['GET'])
+    def get_categories():
+        category_query = Category.query
+        data = serialize_categories(category_query)
+
+        return jsonify(data)
 
 
     """
@@ -52,6 +85,29 @@ def create_app(test_config=None):
     ten questions per page and pagination at the bottom of the screen for three pages.
     Clicking on the page numbers should update the questions.
     """
+    @app.route('/questions', methods=['GET'])
+    def get_questions():
+        selection = Question.query.order_by(Question.id).all()
+        (
+            questions,
+            total_pages,
+            current_page,
+            next_page,
+            previous_page
+        ) = paginate(request, selection)
+        categories = serialize_categories(Category.query).get("categories")
+
+        data = {
+            "questions": questions,
+            "categories": categories,
+            "current_category": None,
+            "totalQuestions": len(questions),
+            "total_pages": total_pages,
+            "current_page": current_page,
+            "previous_page": previous_page,
+            "next_page": next_page
+        }
+        return jsonify(data)
 
     """
     @TODO:
