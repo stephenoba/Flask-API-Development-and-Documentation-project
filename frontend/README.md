@@ -2,7 +2,7 @@
 
 ## Getting Setup
 
-> _tip_: this frontend is designed to work with [Flask-based Backend](../backend) so it will not load successfully if the backend is not working or not connected. We recommend that you **stand up the backend first**, test using Postman or curl, update the endpoints in the frontend, and then the frontend should integrate smoothly.
+> _tip_: this frontend is designed to work with [Flask-based Backend](../backend) so it will not load successfully.
 
 ### Installing Dependencies
 
@@ -15,8 +15,6 @@
 ```bash
 npm install
 ```
-
-> _tip_: `npm i`is shorthand for `npm install``
 
 ## Required Tasks
 
