@@ -90,6 +90,16 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['question_id'], question_id)
         self.assertEqual([], Question.query.filter(Question.id == question_id).all())
 
+    def test_get_question_by_category(self):
+        category_id = 3
+        questions = Question.query.filter(Question.category == category_id).all()
+        res = self.client().get(f"/categories/{category_id}/questions")
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(questions), len(data["questions"]))
+
+
 # Make the tests conveniently executable
 if __name__ == "__main__":
     unittest.main()

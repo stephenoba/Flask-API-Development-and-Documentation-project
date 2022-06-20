@@ -131,7 +131,6 @@ def create_app(test_config=None):
         except:
             abort(422)
 
-
     """
     @TODO:
     Create an endpoint to POST a new question,
@@ -142,6 +141,18 @@ def create_app(test_config=None):
     the form will clear and the question will appear at the end of the last page
     of the questions list in the "List" tab.
     """
+
+    """
+    @TODO:
+    Create a POST endpoint to get questions based on a search term.
+    It should return any questions for whom the search term
+    is a substring of the question.
+
+    TEST: Search by any phrase. The questions list will update to include
+    only question that include that string within their question.
+    Try using the word "title" to start.
+    """
+
     def validate_new_question(data):
         difficulty = data.get("difficulty", None)
         category = data.get("category", None)
@@ -207,23 +218,39 @@ def create_app(test_config=None):
 
     """
     @TODO:
-    Create a POST endpoint to get questions based on a search term.
-    It should return any questions for whom the search term
-    is a substring of the question.
-
-    TEST: Search by any phrase. The questions list will update to include
-    only question that include that string within their question.
-    Try using the word "title" to start.
-    """
-
-    """
-    @TODO:
     Create a GET endpoint to get questions based on category.
 
     TEST: In the "List" tab / main screen, clicking on one of the
     categories in the left column will cause only questions of that
     category to be shown.
     """
+    @app.route('/categories/<int:category_id>/questions', methods=['GET'])
+    def get_category_questions(category_id):
+        try:
+            category = Category.query.filter(Category.id == category_id).one_or_none()
+            if not category:
+                abort(404)
+            selection = Question.query.filter(Question.category == category_id).all()
+            (
+                questions,
+                total_pages,
+                current_page,
+                next_page,
+                previous_page
+            ) = paginate(request, selection)
+
+            data = {
+                "questions": questions,
+                "current_category": category.type,
+                "totalQuestions": len(questions),
+                "total_pages": total_pages,
+                "current_page": current_page,
+                "previous_page": previous_page,
+                "next_page": next_page
+            }
+            return jsonify(data)
+        except:
+            abort(422)
 
     """
     @TODO:
