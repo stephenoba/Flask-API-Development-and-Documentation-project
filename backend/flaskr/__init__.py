@@ -72,6 +72,7 @@ def create_app(test_config=None):
     def get_categories():
         category_query = Category.query
         data = serialize_categories(category_query)
+        data["success"] = True
 
         return jsonify(data)
 
@@ -101,6 +102,7 @@ def create_app(test_config=None):
         categories = serialize_categories(Category.query).get("categories")
 
         data = {
+            "success": True,
             "questions": questions,
             "categories": categories,
             "current_category": None,
@@ -127,7 +129,7 @@ def create_app(test_config=None):
             if not question:
                 abort(404)
             question.delete()
-            data = {"question_id": question_id}
+            data = {"success": True, "question_id": question_id}
             return jsonify(data)
         except:
             abort(422)
@@ -191,6 +193,7 @@ def create_app(test_config=None):
                 ) = paginate(request, selection)
 
                 data = {
+                    "success": True,
                     "questions": questions,
                     "current_category": None,
                     "totalQuestions": len(questions),
@@ -212,6 +215,7 @@ def create_app(test_config=None):
 
                 return jsonify(
                     {
+                        "success": True
                         "created": question.id
                     }
                 )
@@ -244,6 +248,7 @@ def create_app(test_config=None):
             ) = paginate(request, selection)
 
             data = {
+                "success": True,
                 "questions": questions,
                 "current_category": category.type,
                 "totalQuestions": len(questions),
@@ -281,7 +286,10 @@ def create_app(test_config=None):
                 next_question = questions_query.filter(Question.id.notin_(previous_questions)).first()
             else:
                 next_question = questions_query.first()
-            data = {"question": next_question.format() if next_question else None}
+            data = {
+                "success": True,
+                "question": next_question.format() if next_question else None
+            }
 
             return jsonify(data)
         except:
@@ -295,19 +303,31 @@ def create_app(test_config=None):
     """
     @app.errorhandler(400)
     def bad_request(error):
-        return jsonify({"success": False, "error": 400, "message": "bad request"}), 400
+        return (jsonify({
+            "success": False,
+            "error": 400,
+            "message": "bad request"
+        }), 400)
 
     @app.errorhandler(404)
     def not_found(error):
         return (
-            jsonify({"success": False, "error": 404, "message": "resource not found"}),
+            jsonify({
+                "success": False,
+                "error": 404,
+                "message": "resource not found"
+            }),
             404,
         )
 
     @app.errorhandler(422)
     def unprocessable(error):
         return (
-            jsonify({"success": False, "error": 422, "message": "unprocessable"}),
+            jsonify({
+                "success": False,
+                "error": 422,
+                "message": "unable to process"
+            }),
             422,
         )
 
