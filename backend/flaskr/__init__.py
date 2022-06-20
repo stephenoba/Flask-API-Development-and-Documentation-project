@@ -3,7 +3,7 @@ import random
 
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import random
 
 from models import setup_db, Question, Category
@@ -35,7 +35,7 @@ def create_app(test_config=None):
     """
     @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
     """
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
     """
     @TODO: Use the after_request decorator to set Access-Control-Allow
@@ -48,7 +48,7 @@ def create_app(test_config=None):
         )
         response.headers.add(
             "Access-Control-Allow-Methods",
-            "GET,PUT,POST,DELETE,OPTIONS"
+            "GET, PUT, POST, DELETE, OPTIONS"
         )
         return response
 
@@ -106,7 +106,7 @@ def create_app(test_config=None):
             "questions": questions,
             "categories": categories,
             "current_category": None,
-            "totalQuestions": len(questions),
+            "total_questions": len(Question.query.all()),
             "total_pages": total_pages,
             "current_page": current_page,
             "previous_page": previous_page,
@@ -196,7 +196,7 @@ def create_app(test_config=None):
                     "success": True,
                     "questions": questions,
                     "current_category": None,
-                    "totalQuestions": len(questions),
+                    "total_questions": len(Question.query.all()),
                     "total_pages": total_pages,
                     "current_page": current_page,
                     "previous_page": previous_page,
@@ -278,8 +278,9 @@ def create_app(test_config=None):
 
         try:
             previous_questions = body.get("previous_questions", None)
-            quiz_category = body.get("quiz_category")
-            category = Category.query.filter(Category.type == quiz_category).one_or_none()
+            quiz_category = body.get("quiz_category")["id"]
+            print(quiz_category)
+            category = Category.query.filter(Category.id == quiz_category).one_or_none()
             questions_query = Question.query.filter(Question.category == category.id)
 
             if previous_questions:
@@ -292,7 +293,8 @@ def create_app(test_config=None):
             }
 
             return jsonify(data)
-        except:
+        except Exception as e:
+            print(e)
             abort(422)
 
 
@@ -332,4 +334,3 @@ def create_app(test_config=None):
         )
 
     return app
-

@@ -35,7 +35,7 @@ class TriviaTestCase(unittest.TestCase):
         self.search_query = {"searchTerm": "What"}
         self.quiz_query = {
             "previous_questions": [],
-            "quiz_category": None
+            "quiz_category": {}
         }
 
     def tearDown(self):
@@ -61,8 +61,6 @@ class TriviaTestCase(unittest.TestCase):
         categories = Category.query.all()
 
         self.assertEqual(res.status_code, 200)
-        self.assertLessEqual(len(data["questions"]), 10)
-        self.assertLessEqual(len(data["questions"]), data["totalQuestions"])
         self.assertEqual(len(data["categories"]), len(categories))
 
     def test_create_question(self):
@@ -78,7 +76,6 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(data["totalQuestions"], 8)
 
     def test_new_question_validation(self):
         self.new_question["category"] = 7
@@ -105,7 +102,7 @@ class TriviaTestCase(unittest.TestCase):
 
     def test_quizzes_no_prev_ques(self):
         category = Category.query.filter(Category.id == 3).one_or_none()
-        self.quiz_query["quiz_category"] = category.type
+        self.quiz_query["quiz_category"] = {"id": category.id, "type": category.type}
         res = self.client().post('/quizzes', json=self.quiz_query)
         data = json.loads(res.data)
 
@@ -114,7 +111,7 @@ class TriviaTestCase(unittest.TestCase):
 
     def test_quizzes_prev_ques(self):
         category = Category.query.filter(Category.id == 3).one_or_none()
-        self.quiz_query["quiz_category"] = category.type
+        self.quiz_query["quiz_category"] = {"id": category.id, "type": category.type}
         self.quiz_query["previous_questions"] = [13, 14]
         res = self.client().post('/quizzes', json=self.quiz_query)
         data = json.loads(res.data)
@@ -127,7 +124,7 @@ class TriviaTestCase(unittest.TestCase):
         category = Category.query.filter(Category.id == 3).one_or_none()
         previous_questions = list(map(lambda x: x.id, Question.query.filter(
             Question.category == category.id).all()))
-        self.quiz_query["quiz_category"] = category.type
+        self.quiz_query["quiz_category"] = {"id": category.id, "type": category.type}
         self.quiz_query["previous_questions"] = previous_questions
         res = self.client().post('/quizzes', json=self.quiz_query)
         data = json.loads(res.data)
