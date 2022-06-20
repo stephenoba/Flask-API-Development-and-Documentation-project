@@ -1,10 +1,12 @@
 import os
+
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
 
 from models import setup_db, Question, Category
+from exceptions import ValidationError
 
 QUESTIONS_PER_PAGE = 10
 
@@ -86,7 +88,7 @@ def create_app(test_config=None):
     Clicking on the page numbers should update the questions.
     """
     @app.route('/questions', methods=['GET'])
-    def get_questions():
+    def retrieve_questions():
         selection = Question.query.order_by(Question.id).all()
         (
             questions,
@@ -116,6 +118,19 @@ def create_app(test_config=None):
     TEST: When you click the trash icon next to a question, the question will be removed.
     This removal will persist in the database and when you refresh the page.
     """
+    @app.route('/questions/<int:question_id>', methods=['DELETE'])
+    def delete_question(question_id):
+        question = Question.query.filter(Question.id == question_id).one_or_none()
+
+        try:
+            if not question:
+                abort(404)
+            question.delete()
+            data = {"question_id": question_id}
+            return jsonify(data)
+        except:
+            abort(422)
+
 
     """
     @TODO:
@@ -127,6 +142,68 @@ def create_app(test_config=None):
     the form will clear and the question will appear at the end of the last page
     of the questions list in the "List" tab.
     """
+    def validate_new_question(data):
+        difficulty = data.get("difficulty", None)
+        category = data.get("category", None)
+        if difficulty and category:
+            if int(difficulty) > 5 or int(category) > 6:
+                raise ValidationError
+        else:
+            raise ValidationError
+
+    @app.route('/questions', methods=['POST'])
+    def create_question():
+        try:
+            body = request.get_json()
+            validate_new_question(body)
+
+            question = body.get("question", None)
+            answer = body.get("answer", None)
+            difficulty = body.get("difficulty", None)
+            category = body.get("category", None)
+            search = body.get("searchTerm", None)
+
+            if search:
+                selection = Question.query.order_by(Question.id).filter(
+                    Question.question.ilike("%{}%".format(search))
+                ).all()
+                (
+                    questions,
+                    total_pages,
+                    current_page,
+                    next_page,
+                    previous_page
+                ) = paginate(request, selection)
+
+                data = {
+                    "questions": questions,
+                    "current_category": None,
+                    "totalQuestions": len(questions),
+                    "total_pages": total_pages,
+                    "current_page": current_page,
+                    "previous_page": previous_page,
+                    "next_page": next_page
+                }
+
+                return jsonify(data)
+            else:
+                question = Question(
+                    answer=answer,
+                    difficulty=difficulty,
+                    category=category,
+                    question=question
+                )
+                question.insert()
+
+                return jsonify(
+                    {
+                        "created": question.id
+                    }
+                )
+        except ValidationError as e:
+            abort(400)
+        except Exception as e:
+            abort(422)
 
     """
     @TODO:
@@ -165,6 +242,23 @@ def create_app(test_config=None):
     Create error handlers for all expected errors
     including 404 and 422.
     """
+    @app.errorhandler(400)
+    def bad_request(error):
+        return jsonify({"success": False, "error": 400, "message": "bad request"}), 400
+
+    @app.errorhandler(404)
+    def not_found(error):
+        return (
+            jsonify({"success": False, "error": 404, "message": "resource not found"}),
+            404,
+        )
+
+    @app.errorhandler(422)
+    def unprocessable(error):
+        return (
+            jsonify({"success": False, "error": 422, "message": "unprocessable"}),
+            422,
+        )
 
     return app
 

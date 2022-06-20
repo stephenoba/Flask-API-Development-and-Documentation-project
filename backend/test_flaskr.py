@@ -25,7 +25,15 @@ class TriviaTestCase(unittest.TestCase):
             self.db.init_app(self.app)
             # create all tables
             self.db.create_all()
-    
+
+        self.new_question = {
+            "answer": "In the Universe",
+            "category": 3,
+            "difficulty": 1,
+            "question": "Where is the earth?"
+        }
+        self.search_query = {"searchTerm": "What"}
+
     def tearDown(self):
         """Executed after reach test"""
         pass
@@ -53,6 +61,34 @@ class TriviaTestCase(unittest.TestCase):
         self.assertLessEqual(len(data["questions"]), data["totalQuestions"])
         self.assertEqual(len(data["categories"]), len(categories))
 
+    def test_create_question(self):
+        total_que = len(Question.query.all())
+        res = self.client().post('/questions', json=self.new_question)
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertLess(total_que, len(Question.query.all()))
+
+    def test_search_question(self):
+        res = self.client().post('/questions', json=self.search_query)
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data["totalQuestions"], 8)
+
+    def test_new_question_validation(self):
+        self.new_question["category"] = 7
+        res = self.client().post('/questions', json=self.new_question)
+
+        self.assertEqual(res.status_code, 400)
+
+    def test_delete_new_question(self):
+        question_id = Question.query.all()[-1].id
+        res = self.client().delete(f'/questions/{question_id}')
+        data = json.loads(res.data)
+
+        self.assertEqual(data['question_id'], question_id)
+        self.assertEqual([], Question.query.filter(Question.id == question_id).all())
 
 # Make the tests conveniently executable
 if __name__ == "__main__":
