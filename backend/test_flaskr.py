@@ -103,16 +103,37 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(questions), len(data["questions"]))
 
-    def test_quizzes(self):
+    def test_quizzes_no_prev_ques(self):
         category = Category.query.filter(Category.id == 3).one_or_none()
         self.quiz_query["quiz_category"] = category.type
-        self.quiz_query["previous_questions"] = [13, 14, 15]
+        res = self.client().post('/quizzes', json=self.quiz_query)
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data.get("question")["category"], category.id)
+
+    def test_quizzes_prev_ques(self):
+        category = Category.query.filter(Category.id == 3).one_or_none()
+        self.quiz_query["quiz_category"] = category.type
+        self.quiz_query["previous_questions"] = [13, 14]
         res = self.client().post('/quizzes', json=self.quiz_query)
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data.get("question")["category"], category.id)
         self.assertEqual(data.get("question")["id"] not in [13, 14], True)
+
+    def test_quizzes_no_next_ques(self):
+        category = Category.query.filter(Category.id == 3).one_or_none()
+        previous_questions = list(map(lambda x: x.id, Question.query.filter(
+            Question.category == category.id).all()))
+        self.quiz_query["quiz_category"] = category.type
+        self.quiz_query["previous_questions"] = previous_questions
+        res = self.client().post('/quizzes', json=self.quiz_query)
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data.get("question"), None)
 
 
 # Make the tests conveniently executable

@@ -157,7 +157,10 @@ def create_app(test_config=None):
     def validate_new_question(data):
         difficulty = data.get("difficulty", None)
         category = data.get("category", None)
-        if difficulty and category:
+        search = data.get("searchTerm", None)
+        if search:
+            return
+        elif difficulty and category:
             if int(difficulty) > 5 or int(category) > 6:
                 raise ValidationError
         else:
