@@ -1,4 +1,5 @@
 import os
+import random
 
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -256,13 +257,33 @@ def create_app(test_config=None):
     @TODO:
     Create a POST endpoint to get questions to play the quiz.
     This endpoint should take category and previous question parameters
-    and return a random questions within the given category,
+    and return a random question within the given category,
     if provided, and that is not one of the previous questions.
 
     TEST: In the "Play" tab, after a user selects "All" or a category,
     one question at a time is displayed, the user is allowed to answer
     and shown whether they were correct or not.
     """
+    @app.route('/quizzes', methods=['POST'])
+    def get_quizzes():
+        body = request.get_json()
+
+        try:
+            previous_questions = body.get("previous_questions", None)
+            quiz_category = body.get("quiz_category")
+            category = Category.query.filter(Category.type == quiz_category).one_or_none()
+            questions_query = Question.query.filter(Question.category == category.id)
+
+            if previous_questions:
+                next_question = questions_query.filter(Question.id.notin_(previous_questions)).first()
+            else:
+                next_question = questions_query.first()
+            data = {"question": next_question.format() if next_question else None}
+
+            return jsonify(data)
+        except:
+            abort(422)
+
 
     """
     @TODO:

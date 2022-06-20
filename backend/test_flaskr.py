@@ -33,6 +33,10 @@ class TriviaTestCase(unittest.TestCase):
             "question": "Where is the earth?"
         }
         self.search_query = {"searchTerm": "What"}
+        self.quiz_query = {
+            "previous_questions": [],
+            "quiz_category": None
+        }
 
     def tearDown(self):
         """Executed after reach test"""
@@ -98,6 +102,17 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(questions), len(data["questions"]))
+
+    def test_quizzes(self):
+        category = Category.query.filter(Category.id == 3).one_or_none()
+        self.quiz_query["quiz_category"] = category.type
+        self.quiz_query["previous_questions"] = [13, 14, 15]
+        res = self.client().post('/quizzes', json=self.quiz_query)
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data.get("question")["category"], category.id)
+        self.assertEqual(data.get("question")["id"] not in [13, 14], True)
 
 
 # Make the tests conveniently executable
